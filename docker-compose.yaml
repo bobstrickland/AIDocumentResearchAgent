@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: postgres-vector
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       agent_dev
+      POSTGRES_USER:     agent
+      POSTGRES_PASSWORD: agent_password
+      PGDATA:            /var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent -d agent_dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    
+volumes:
+  postgres_data:
+    driver: local

@@ -1,0 +1,19 @@
+spring:
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:NONE}
+      chat:
+        options:
+          model: claude-sonnet-4-6
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: create
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/agent_dev}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+logging:
+  level:
+    me.paulschwarz.spring_dotenv: DEBUG
+    org.springframework.boot.context.config: DEBUG
