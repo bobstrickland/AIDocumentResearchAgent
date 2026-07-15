@@ -8,12 +8,15 @@ spring:
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/agent_dev}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 logging:
   level:
-    me.paulschwarz.spring_dotenv: DEBUG
-    org.springframework.boot.context.config: DEBUG
+    claudeagent: DEBUG
