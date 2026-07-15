@@ -6,17 +6,14 @@ import java.util.List;
 import org.hibernate.annotations.Array;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import jakarta.persistence.Id;
-//import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import claudeagent.model.converters.VectorConverter;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -43,8 +40,9 @@ public class DocumentChunk {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
-    @Convert(converter = VectorConverter.class)
-    @Column(name = "embedding", columnDefinition = "vector(768)", nullable = false)
+    @Column
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    @Array(length = 768)
     private float[] embedding;
 
     @Column(name = "source_title", length = 512)

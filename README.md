@@ -43,20 +43,24 @@ I am not including the model files in this repository.  See [Getting Started](#g
 
 ## Current Progress
 
-** Partially Implemented:**
+** Implemented:**
 - [x] Document upload REST controller
 - [x] Database schema for storing documents and vector embeddings
 - [x] Document chunking pipeline
 - [x] In-house embedding generation
 
+** Partially Implemented:**
+
 **Planned:**
 - [ ] Vector similarity search / retrieval
+
 - [ ] Autonomous research agent (ReAct loop via Spring AI `ChatClient`, with tool calling)
 - [ ] Tool set: document search, document lookup by ID, save report, retrieve saved report
 - [ ] Report persistence and retrieval
 - [ ] Conversational memory across follow-up questions
 - [ ] Guardrails: iteration limits, input validation on write-capable tools
 - [ ] Unit and integration tests
+
 - [ ] CI pipeline (GitHub Actions)
 - [ ] Dockerization and `docker-compose` setup
 - [ ] Design document covering architecture decisions, autonomy/reliability tradeoffs, and guardrail placement
@@ -78,6 +82,7 @@ cd AIDocumentResearchAgent
 ```
 
 To download the model to you machine, here is what I did, you should be able to do something similar:
+
 ```
 python3 -m venv onnx-export-env
 source onnx-export-env/bin/activate

@@ -5,8 +5,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,9 +21,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import claudeagent.demo.ResearchAgent;
+import ai.djl.translate.TranslateException;
+import claudeagent.agent.ResearchAgent;
 import claudeagent.documentImport.DocumentChunker;
-import claudeagent.documentImport.PdfFileHandler;
+import claudeagent.documentImport.DocumentEmbedder;
+import claudeagent.documentImport.DocumentStoreInterface;
+import claudeagent.documentImport.fileHandlers.PdfFileHandler;
+import claudeagent.model.DocumentChunk;
+import claudeagent.model.repository.DocumentChunkRepository;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,6 +44,16 @@ public class DocumentController {
 	@Value("${UPLOAD_DIR:./uploads/}")
 	private String UPLOAD_DIR;
 	
+	@Autowired
+	DocumentStoreInterface documentStore;
+
+	@Autowired
+	DocumentEmbedder documentEmbedder;
+
+	@Autowired
+	DocumentChunkRepository documentChunkRepository;
+	
+	
 	@PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
 		
@@ -44,34 +62,52 @@ public class DocumentController {
         }
 
         try {
-            File directory = new File(UPLOAD_DIR);
-            if (!directory.exists()) {
-                directory.mkdirs();
-            }
-            String fileName = file.getOriginalFilename();
-            Path path = Paths.get(UPLOAD_DIR + fileName);
-            Files.write(path, file.getBytes());
+        	String key = documentStore.putDocument(file.getBytes());
             String text;
             if ("application/pdf".equalsIgnoreCase(file.getContentType())) {
             	text = PdfFileHandler.extractText(file.getBytes());
             } else {
             	text = new String(file.getBytes());
             }
-            
+            String title = file.getOriginalFilename();
             List<String> chunky = DocumentChunker.chunkText(text, 768, 115);
+            Instant rightNow = Instant.now();
             
-StringBuilder sb = new StringBuilder();
-    		for (String s: chunky) {
-    			sb.append(s+"\n---------------------------------------------------");
-    		}
-            
-            
-            
-            System.out.println (file.getContentType());
-            
-            
+            ArrayList<DocumentChunk> chunkArray= new ArrayList<DocumentChunk>(chunky.size()); 
+            int chunkIndex = 0;
+            int errorCount = 0;
+    		for (String chunk: chunky) {
+    			float[] embeddings;
+				try {
+					embeddings = documentEmbedder.embed(chunk);
+	    			DocumentChunk documentChunk = new DocumentChunk();
+	    			documentChunk.setEmbedding(embeddings);
+	    			documentChunk.setDocumentId(key);
+	    			documentChunk.setChunkIndex(chunkIndex++);
+	    			documentChunk.setContent(chunk);
+	    			documentChunk.setSourceTitle(title);
+	    			documentChunk.setCreatedAt(rightNow);
+//	    			documentChunk.setSourceUrl(sourceURL);
+//	    			documentChunk.setTags(tags);
 
-            return ResponseEntity.ok("File uploaded successfully:\n" + sb.toString());
+	    			documentChunkRepository.save(documentChunk);
+				} catch (TranslateException e) {
+					errorCount ++;
+					e.printStackTrace();
+				}
+    		}
+    		documentChunkRepository.flush();
+//            System.out.println (file.getContentType());
+            
+            String response = title;
+            if (errorCount > 0) {
+            	title += " ["+errorCount+"] errors ";
+            }
+            if (chunkIndex > 0) {
+            	title += " ["+chunkIndex+"] Chunks Saved ";
+            }
+
+            return ResponseEntity.ok("File uploaded successfully:\n" + title);
 
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
