@@ -44,20 +44,25 @@ I am not including the model files in this repository.  See [Getting Started](#g
 ## Current Progress
 
 **Implemented:**
-- [x] Document upload REST controller
-- [x] Database schema for storing documents and vector embeddings
-- [x] Document chunking pipeline
-- [x] In-house embedding generation
+- [X] Document upload REST controller
+- [X] Database schema for storing documents and vector embeddings
+- [X] Document chunking pipeline
+- [X] In-house embedding generation
 - [X] Vector similarity search / retrieval
+- [X] Autonomous research agent (ReAct loop via Spring AI `ChatClient`, with tool calling)
+- [X] Tool set: document search, document lookup by ID, save report, retrieve saved report
+    - [X] Document Search
+    - [X] Document lookup by ID
+    - [X] Save report
+    - [X] Retrieve previously saved report
 
 **In Progress:**
-- [ ] Autonomous research agent (ReAct loop via Spring AI `ChatClient`, with tool calling)
+
+- [ ] Report persistence and retrieval
+- [ ] Conversational memory across follow-up questions
 
 **Planned:**
 
-- [ ] Tool set: document search, document lookup by ID, save report, retrieve saved report
-- [ ] Report persistence and retrieval
-- [ ] Conversational memory across follow-up questions
 - [ ] Guardrails: iteration limits, input validation on write-capable tools
 - [ ] Unit and integration tests
 - [ ] CI pipeline (GitHub Actions)

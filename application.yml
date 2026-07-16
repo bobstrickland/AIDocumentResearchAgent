@@ -5,6 +5,7 @@ spring:
       chat:
         options:
           model: claude-haiku-4-5
+          max-tokens: 8192
   jpa:
     open-in-view: false
     hibernate:
@@ -20,3 +21,8 @@ spring:
 logging:
   level:
     claudeagent: DEBUG
+    org.springframework.ai: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) %msg%n"
+  file:
+    name: logs/agent.log   

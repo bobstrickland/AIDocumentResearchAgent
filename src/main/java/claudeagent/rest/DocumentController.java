@@ -72,6 +72,19 @@ public class DocumentController {
 			return null;
 		}
 	}
+
+	@GetMapping(value="/findDocument")
+	public List<DocumentSearchResult> findDocumentById(@RequestParam("documentId") String documentId, @RequestParam(value="limit", defaultValue="0") int limit) {
+		List<DocumentChunk> documentChunkList = documentChunkRepository.findChunks(documentId, limit);
+		if (documentChunkList != null && !documentChunkList.isEmpty()) {
+			List<DocumentSearchResult> resultList = documentChunkList.stream()
+			.map(chunk -> new DocumentSearchResult(chunk.getDocumentId(), chunk.getSourceTitle(), chunk.getContent()))
+			.toList();
+			return resultList;
+		} else {
+			return null;
+		}
+	}
 	
 	@PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
