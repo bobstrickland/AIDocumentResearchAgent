@@ -1,21 +1,26 @@
 package claudeagent.agent;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import claudeagent.agent.guardrails.AgentIterationLimitExceededException;
+import claudeagent.agent.guardrails.AgentTimeLimitExceededException;
+import claudeagent.agent.guardrails.IterationGuard;
 import claudeagent.documentImport.DocumentStoreInterface;
 import claudeagent.model.DocumentSearchResult;
 import claudeagent.model.ReportSearchResult;
-import claudeagent.rest.DocumentController;
-import claudeagent.rest.ReportController;
+import claudeagent.rest.SessionContext;
+import claudeagent.service.DocumentService;
+import claudeagent.service.ReportService;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,19 +31,23 @@ public class ResearchTools {
 
 	String outputDirectory;
 
-	private final ReportController reportController;
+	private final ReportService reportService;
 
-	private final DocumentController documentController;
+	private final DocumentService documentService;
 	
 	private final DocumentStoreInterface documentStore;
+	
+	private final IterationGuard guard;
+	private static final Logger log = LoggerFactory.getLogger(ResearchTools.class);
 
-	public ResearchTools(@Value("${OUTPUT_DIR:./output/}") String outputDirectory, ReportController reportController,
-			DocumentController documentController, DocumentStoreInterface documentStore) {
+	public ResearchTools(@Value("${OUTPUT_DIR:./output/}") String outputDirectory, ReportService reportService,
+			DocumentService documentService, DocumentStoreInterface documentStore, IterationGuard guard) {
 		super();
 		this.outputDirectory = outputDirectory;
-		this.reportController = reportController;
-		this.documentController = documentController;
+		this.reportService = reportService;
+		this.documentService = documentService;
 		this.documentStore = documentStore;
+		this.guard = guard;
 	}
 	
 	
@@ -47,8 +56,14 @@ public class ResearchTools {
 			@ToolParam (description="This is the query to be used for searching the database for the relevent document chunks")
 			String text, 
 			@ToolParam (description="This is the maximum number of chunks which should be returned.")
-			int limit) {
-		List<DocumentSearchResult> searchResults = documentController.queryFile(text, limit);
+			int limit) throws AgentIterationLimitExceededException, AgentTimeLimitExceededException {
+		guard.recordCall(SessionContext.getCurrentSessionId());
+		List<DocumentSearchResult> searchResults = null;
+		try {
+			searchResults = documentService.queryFile(text, limit);
+		} catch (Exception e) {
+			guard.recordError(SessionContext.getCurrentSessionId(), e);
+		}
 		return searchResults;
 	}
 	
@@ -58,8 +73,14 @@ public class ResearchTools {
 					              + "to reference the original document.")
 			String documentId, 
 			@ToolParam (description="This is the maximum number of chunks which should be returned.")
-			int limit) {
-		List<DocumentSearchResult> searchResults = documentController.findDocumentById(documentId, limit);
+			int limit) throws AgentIterationLimitExceededException, AgentTimeLimitExceededException {
+		guard.recordCall(SessionContext.getCurrentSessionId());
+		List<DocumentSearchResult> searchResults = null;
+		try {
+			searchResults = documentService.findDocumentById(documentId, limit);
+		} catch (Exception e) {
+			guard.recordError(SessionContext.getCurrentSessionId(), e);
+		}
 		return searchResults;
 	}
 	
@@ -68,15 +89,14 @@ public class ResearchTools {
 			@ToolParam (description="This is a unique identifier used by the Document Store to reference the original document.")
 			String documentId, 
 			@ToolParam (description="This is the name of the file to be used for writing the file to disc.")
-			String fileName) {
-		System.out.println("OUTPUT_DIR is "+outputDirectory);
-		byte[] fileData = documentStore.getDocument(documentId);
-		System.out.println("Saving "+fileName);
-		Path path = Paths.get("./output/"+fileName);
+			String fileName) throws AgentIterationLimitExceededException, AgentTimeLimitExceededException {
+		guard.recordCall(SessionContext.getCurrentSessionId());
         try {
+    		byte[] fileData = documentStore.getDocument(documentId);
+    		Path path = Paths.get("./output/"+fileName);
 			Files.write(path, fileData);
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			guard.recordError(SessionContext.getCurrentSessionId(), e);
 		}
 	}
 
@@ -90,17 +110,21 @@ public class ResearchTools {
 					              + "Write this as if it will be read by someone later who does not have access to the source documents.")
 			String reportText, 
 	        @ToolParam(description = "The document IDs of every source document that contributed to this report")
-			List<String> sourceDocumentIds) {
-
-		Long reportId;
-		if (sourceDocumentIds == null) {
-			reportId = reportController.writeAgentReport( agentGoal, reportText);
-		} else {
-			String[] documentIds = new String[sourceDocumentIds.size()];
-			for (int i=0; i < sourceDocumentIds.size(); i++) {
-				documentIds[i]=sourceDocumentIds.get(i);
+			List<String> sourceDocumentIds) throws AgentIterationLimitExceededException, AgentTimeLimitExceededException {
+		guard.recordCall(SessionContext.getCurrentSessionId());
+		Long reportId = null;
+		try {
+			if (sourceDocumentIds == null) {
+				reportId = reportService.writeAgentReport( agentGoal, reportText);
+			} else {
+				String[] documentIds = new String[sourceDocumentIds.size()];
+				for (int i=0; i < sourceDocumentIds.size(); i++) {
+					documentIds[i]=sourceDocumentIds.get(i);
+				}
+				reportId = reportService.writeAgentReport( agentGoal, reportText, documentIds);
 			}
-			reportId = reportController.writeAgentReport( agentGoal, reportText, documentIds);
+		} catch (Exception e) {
+			guard.recordError(SessionContext.getCurrentSessionId(), e);
 		}
 		return reportId;
 	}
@@ -116,8 +140,15 @@ public class ResearchTools {
 			String agentGoalPhrase, 
 			@ToolParam (description="This is the maximum number of report search results which should be returned. "
 					              + "A limit of 0 means return all results, but be careful here because it might return too many results.")
-			int limit) {
-		return reportController.findReports(agentGoalPhrase, limit);
+			int limit) throws AgentIterationLimitExceededException, AgentTimeLimitExceededException {
+		guard.recordCall(SessionContext.getCurrentSessionId());
+		List<ReportSearchResult> reportResult = null;
+		try {
+			reportResult =  reportService.findReports(agentGoalPhrase, limit);
+		} catch (Exception e) {
+			guard.recordError(SessionContext.getCurrentSessionId());
+		}
+		return reportResult;
 	}
 
 }

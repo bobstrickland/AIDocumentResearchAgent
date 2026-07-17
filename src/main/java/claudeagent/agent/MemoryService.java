@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import ai.djl.translate.TranslateException;
@@ -17,12 +18,35 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Service
-@Getter @Setter @AllArgsConstructor @Builder
+@Getter @Setter
 public class MemoryService {
 	
 	private final ConversationHistoryRepository conversationHistoryRepository;
 	
 	private final DocumentEmbedder documentEmbedder;
+	private final int recentMessageLimit;
+	private final int contextMessageLimit;
+	
+	
+
+	public MemoryService(ConversationHistoryRepository conversationHistoryRepository, 
+			             DocumentEmbedder documentEmbedder,
+			             @Value("${agent.memory.limit.recent:5}") int recentMessageLimit, 
+			             @Value("${agent.memory.limit.context:5}") int contextMessageLimit) {
+		super();
+		this.conversationHistoryRepository = conversationHistoryRepository;
+		this.documentEmbedder = documentEmbedder;
+		this.recentMessageLimit = recentMessageLimit;
+		this.contextMessageLimit = contextMessageLimit;
+	}
+
+	public List<MemoryMessage> getRecentMessages(String sessionId) {
+		return getRecentMessages(sessionId, recentMessageLimit);
+	}
+
+	public List<MemoryMessage> getContextMessages(String goal, String sessionId) {
+		return getContextMessages(goal, sessionId, contextMessageLimit);
+	}
 
 	public List<MemoryMessage> getRecentMessages(String sessionId, int limit) {
 		List<ConversationHistory> conversationHistoryList = conversationHistoryRepository.findMostRecent(sessionId, limit);
@@ -70,5 +94,6 @@ public class MemoryService {
 			e.printStackTrace();
 		}
 	}
+
 	
 }

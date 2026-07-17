@@ -18,6 +18,12 @@ spring:
     multipart:
       max-file-size: 50MB
       max-request-size: 50MB
+agent:
+  guard:
+    max-tool-calls: 15
+    max-error-calls: 3
+    timeout:
+      seconds: 20
 logging:
   level:
     claudeagent: DEBUG

@@ -61,21 +61,28 @@ I am not including the model files in this repository.  See [Getting Started](#g
 - [X] Vector similarity search / retrieval
 - [X] Autonomous research agent (ReAct loop via Spring AI `ChatClient`, with tool calling)
 - [X] Tool set: document search, document lookup by ID, save report, retrieve saved report
-    - [X] Document Search
-    - [X] Document lookup by ID
-    - [X] Save report
-    - [X] Retrieve previously saved report
+    - Document Search
+    - Document lookup by ID
+    - Save report
+    - Retrieve previously saved report
 - [X] Report persistence and retrieval
+    - reports contain text of report and of goal that generated the report
+    - reports contain list of related document IDs to support report
 - [X] Conversational memory across follow-up questions
+    - Storing both user and agent conversational history with vector encoding
+    - Retrieve (by session ID) configurable number of most recent conversation entries
+    - Retrieve (by session ID) configurable number of most relevant conversation entries
+- [X] Guardrails: iteration limits, input validation on write-capable tools
+    - Maximum tool call set
+    - Maximum tool error set
+    - Maximum agent run time set
+    - Agent instructions include (admittedly soft guardrails) to keep in scope for stored documents
 
 **In Progress:**
-
-- [-] Guardrails: iteration limits, input validation on write-capable tools
+- [-] Unit and integration tests
+- [ ] CI pipeline (GitHub Actions)
 
 **Planned:**
-
-- [ ] Unit and integration tests
-- [ ] CI pipeline (GitHub Actions)
 - [ ] Dockerization and `docker-compose` setup
 - [ ] Design document covering architecture decisions, autonomy/reliability tradeoffs, and guardrail placement
 
