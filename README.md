@@ -41,6 +41,16 @@ I am not including the model files in this repository.  See [Getting Started](#g
 
 ---
 
+## Conversational Memory
+
+[System prompt] - part of initial chat client build
+
+[Retrieved older context, via vector search, if relevant]
+[Last N turns, verbatim, always included]
+[Current user message]
+
+---
+
 ## Current Progress
 
 **Implemented:**
@@ -55,15 +65,15 @@ I am not including the model files in this repository.  See [Getting Started](#g
     - [X] Document lookup by ID
     - [X] Save report
     - [X] Retrieve previously saved report
+- [X] Report persistence and retrieval
+- [X] Conversational memory across follow-up questions
 
 **In Progress:**
 
-- [ ] Report persistence and retrieval
-- [ ] Conversational memory across follow-up questions
+- [-] Guardrails: iteration limits, input validation on write-capable tools
 
 **Planned:**
 
-- [ ] Guardrails: iteration limits, input validation on write-capable tools
 - [ ] Unit and integration tests
 - [ ] CI pipeline (GitHub Actions)
 - [ ] Dockerization and `docker-compose` setup

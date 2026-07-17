@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import claudeagent.agent.ResearchAgent;
+import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,8 +20,9 @@ public class AgentController {
 	private final ResearchAgent agent;
 
 	@PostMapping("/run")
-	public String runAgent(@RequestBody String goal) {
-		return agent.run(goal);
+	public String runAgent(@RequestBody String goal, HttpSession session) {
+		String sessionId = session==null?null:session.getId();
+		return agent.run(goal, sessionId);
 	}
 	
 }
