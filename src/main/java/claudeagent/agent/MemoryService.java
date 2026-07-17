@@ -1,8 +1,11 @@
 package claudeagent.agent;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -12,14 +15,13 @@ import claudeagent.documentImport.DocumentEmbedder;
 import claudeagent.model.ConversationHistory;
 import claudeagent.model.MemoryMessage;
 import claudeagent.model.repository.ConversationHistoryRepository;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
 @Service
 @Getter @Setter
 public class MemoryService {
+	private static final Logger log = LoggerFactory.getLogger(MemoryService.class);
 	
 	private final ConversationHistoryRepository conversationHistoryRepository;
 	
@@ -53,8 +55,9 @@ public class MemoryService {
 		if (conversationHistoryList != null && !conversationHistoryList.isEmpty()) {
 			
 			List<MemoryMessage> resultList = conversationHistoryList.stream()
-			.map(memory -> new MemoryMessage(memory.getContent(), MessageType.valueOf(memory.getMessageType())))
+			.map(memory -> new MemoryMessage(memory.getContent(), MessageType.valueOf(memory.getMessageType()), memory.getId()))
 			.toList();
+			Collections.reverse(resultList); // reverse list so it's returned to the agent in 
 			return resultList;
 		} else {
 			return null;
@@ -69,14 +72,14 @@ public class MemoryService {
 			if (conversationHistoryList != null && !conversationHistoryList.isEmpty()) {
 				
 				List<MemoryMessage> resultList = conversationHistoryList.stream()
-				.map(memory -> new MemoryMessage(memory.getContent(), MessageType.valueOf(memory.getMessageType())))
+				.map(memory -> new MemoryMessage(memory.getContent(), MessageType.valueOf(memory.getMessageType()), memory.getId()))
 				.toList();
 				return resultList;
 			} else {
 				return null;
 			}
 		} catch (TranslateException e) {
-			e.printStackTrace();
+			log.error("Exception translating context messages",e);
 		}
 		return null;
 	}
@@ -91,7 +94,7 @@ public class MemoryService {
 			conversationHistory.setEmbedding(embeddings);
 			conversationHistoryRepository.saveAndFlush(conversationHistory);
 		} catch (TranslateException e) {
-			e.printStackTrace();
+			log.error("Exception translating store",e);
 		}
 	}
 

@@ -1,15 +1,21 @@
 package claudeagent.agent;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.stereotype.Service;
 
+import claudeagent.agent.guardrails.AgentIterationLimitExceededException;
+import claudeagent.agent.guardrails.AgentTimeLimitExceededException;
 import claudeagent.model.MemoryMessage;
 
 
@@ -33,18 +39,36 @@ public class ResearchAgent {
 	}
 	
 	public String run (String goal, String sessionId) {
-		List<Message> conversationalMemory = new ArrayList<Message>();
+		List<MemoryMessage> combinedMessageList = new ArrayList<MemoryMessage>();
 
 		List<MemoryMessage> recent = memoryService.getRecentMessages(sessionId);
-		List<MemoryMessage> context = memoryService.getRecentMessages(sessionId);
+		List<MemoryMessage> context = memoryService.getContextMessages(goal, sessionId);
 
 		if (recent != null) {
-			conversationalMemory.addAll(recent);
+			combinedMessageList.addAll(recent);
 		}
 		if (context != null) {
-			conversationalMemory.addAll(context);
+			combinedMessageList.addAll(context);
 		}
-		String chatClientResponse =  chatClient.prompt().messages(conversationalMemory).user(goal).call().content();
+		List<MemoryMessage> conversationalMemory = combinedMessageList.stream()
+			      .collect(Collectors.toMap(MemoryMessage::getId, m -> m, (a, b) -> a, LinkedHashMap::new))
+			      .values().stream()
+			      .sorted(Comparator.comparingLong(MemoryMessage::getId)) // sort messages in chronological order (via id smallest to largest)
+			      .collect(Collectors.toList());
+		
+		String chatClientResponse;
+		try {
+			chatClientResponse =  chatClient.prompt().messages(new ArrayList<Message>(conversationalMemory)).user(goal).call().content();
+		} catch (ToolExecutionException tee) {
+	          Throwable cause = tee.getCause();
+	          if (cause instanceof AgentIterationLimitExceededException || cause instanceof AgentTimeLimitExceededException) {
+	              log.warn("Agent run terminated by guardrail for session {}: {}", sessionId, cause.getMessage());
+	              memoryService.store(MessageType.USER, sessionId, goal);
+	              return "Run terminated: " + cause.getMessage();
+	          }
+	          throw tee;
+		}
+
 		memoryService.store(MessageType.USER, sessionId, goal);
 		memoryService.store(MessageType.ASSISTANT, sessionId, chatClientResponse);
 		return chatClientResponse;

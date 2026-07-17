@@ -21,14 +21,14 @@ public class ReportService {
 	@Autowired
 	private AgentReportRepository reportRepository;
 
-	private static final Logger log = LoggerFactory.getLogger(ReportController.class);
+	private static final Logger log = LoggerFactory.getLogger(ReportService.class);
 
 	public List<ReportSearchResult> findReports(String agentGoal, int limit) {
 		if (agentGoal == null || agentGoal.isBlank()) {
 			return null;
 		} else {
 			List<AgentReport> agentReportList;
-			if (limit > 0) {
+			if (limit <= 0) {
 				agentReportList= reportRepository.findReportbyGoal("%"+agentGoal.trim()+"%");
 			} else {
 				agentReportList= reportRepository.findReportbyGoal("%"+agentGoal.trim()+"%", Limit.of(limit));

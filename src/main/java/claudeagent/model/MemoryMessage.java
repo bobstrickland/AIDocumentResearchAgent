@@ -7,17 +7,22 @@ import org.springframework.ai.chat.messages.MessageType;
 
 public class MemoryMessage implements org.springframework.ai.chat.messages.Message {
 
-	private String text;
-	private Map<String, Object> metadata;
-	private MessageType messageType;
+	private final String text;
+	private final Map<String, Object> metadata;
+	private final MessageType messageType;
+    private final Long id;
 	
-	public MemoryMessage (String text, MessageType messageType) {
+	public MemoryMessage (String text, MessageType messageType, Long id) {
 		super();
 		this.messageType = messageType;
 		this.text = text;
 		this.metadata = new HashMap<String, Object>();
+		this.id = id;
 	}
 	
+	public Long getId() {
+		return id;
+	}
 	
 	@Override
 	public String getText() {
