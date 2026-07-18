@@ -57,7 +57,10 @@ public class AgentController {
 		String sessionId = session==null?null:session.getId();
 		List<ConversationHistory> conversationList = memoryService.getAllMessages(sessionId);
 		StringBuffer sb = new StringBuffer();
-		conversationList.stream().forEach(memory -> sb.append("[").append(memory.getMessageType()).append("]").append(memory.getContent()).append("\n") );
+		conversationList.stream().forEach(memory -> sb.append("\n[").append(memory.getMessageType()).append("]")
+				                                      .append(" Tokens [").append(memory.getInputTokens()).append(" in / ")
+				                                      .append(memory.getOutputputTokens()).append(" out]\n")
+				                                      .append(memory.getContent()).append("\n") );
         return sb.toString();
 	}
 	

@@ -8,12 +8,15 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.ai.anthropic.api.AnthropicApi.ChatCompletionResponse;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
-import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.stereotype.Service;
 
@@ -64,20 +67,31 @@ public class ResearchAgent {
 		                                 new UserMessage(memoryMessage.getText()) )
 			      .collect(Collectors.toList());
 		String chatClientResponse;
+
+		Integer inputTokens  = null;
+		Integer outputTokens = null;
+		Integer totalTokens  = null;
 		try {
-			chatClientResponse =  chatClient.prompt().messages(conversationalMemory).user(goal).call().content();
+			ChatResponse response =  chatClient.prompt().messages(conversationalMemory).user(goal).call().chatResponse();
+			chatClientResponse = response.getResult().getOutput().getText();
+			ChatResponseMetadata metaData = response.getMetadata();	
+			Usage usage  = metaData.getUsage();
+			inputTokens  = usage.getPromptTokens();
+			outputTokens = usage.getCompletionTokens();
+			totalTokens  = usage.getTotalTokens();
+			log.info("Goal: {}\nconsumed {} input tokens, {} output tokens, for a total of {} tokens.", goal, inputTokens, outputTokens, totalTokens);
 		} catch (ToolExecutionException tee) {
 	          Throwable cause = tee.getCause();
 	          if (cause instanceof AgentIterationLimitExceededException || cause instanceof AgentTimeLimitExceededException) {
 	              log.warn("Agent run terminated by guardrail for session {}: {}", sessionId, cause.getMessage());
-	              memoryService.store(MessageType.USER, sessionId, goal);
+	              memoryService.store(MessageType.USER, sessionId, goal, null, null);
 	              return "Run terminated: " + cause.getMessage();
 	          }
 	          throw tee;
 		}
 
-		memoryService.store(MessageType.USER, sessionId, goal);
-		memoryService.store(MessageType.ASSISTANT, sessionId, chatClientResponse);
+		memoryService.store(MessageType.USER, sessionId, goal, inputTokens, outputTokens);
+		memoryService.store(MessageType.ASSISTANT, sessionId, chatClientResponse, inputTokens, outputTokens);
 		return chatClientResponse;
 	}
 	

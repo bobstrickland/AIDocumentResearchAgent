@@ -77,6 +77,8 @@ I am not including the model files in this repository.  See [Getting Started](#g
     - Maximum tool error set
     - Maximum agent run time set
     - Agent instructions include (admittedly soft guardrails) to keep in scope for stored documents
+- [X] Token Tracking: Capturing tokens spend for both input and output, saving them to the conversation history table 
+- [X] Conversation tracking: Allow user to get conversation history for their own session.
 
 **In Progress:**
 - [-] Unit and integration tests

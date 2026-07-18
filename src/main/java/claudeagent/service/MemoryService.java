@@ -57,7 +57,6 @@ public class MemoryService {
 			List<MemoryMessage> resultList = conversationHistoryList.stream()
 			.map(memory -> new MemoryMessage(memory.getContent(), MessageType.fromValue(memory.getMessageType()), memory.getId()))
 			.toList();
-			//Collections.reverse(resultList); // reverse list so it's returned to the agent in 
 			return resultList;
 		} else {
 			return null;
@@ -70,7 +69,6 @@ public class MemoryService {
 			String embeddedFloatString = Arrays.toString(embeddings);
 			List<ConversationHistory> conversationHistoryList = conversationHistoryRepository.findNearest(embeddedFloatString, sessionId, limit);
 			if (conversationHistoryList != null && !conversationHistoryList.isEmpty()) {
-				
 				List<MemoryMessage> resultList = conversationHistoryList.stream()
 				.map(memory -> new MemoryMessage(memory.getContent(), MessageType.fromValue(memory.getMessageType()), memory.getId()))
 				.toList();
@@ -84,7 +82,7 @@ public class MemoryService {
 		return null;
 	}
 	
-	public void store(MessageType messageType, String sessionId, String text) {
+	public ConversationHistory store(MessageType messageType, String sessionId, String text, Integer inputTokens, Integer outputTokens) {
 		try {
 			float[] embeddings = documentEmbedder.embed(text);
 			ConversationHistory conversationHistory = new ConversationHistory();
@@ -92,9 +90,13 @@ public class MemoryService {
 			conversationHistory.setContent(text);
 			conversationHistory.setSessionId(sessionId);
 			conversationHistory.setEmbedding(embeddings);
+			conversationHistory.setInputTokens(inputTokens);
+			conversationHistory.setOutputputTokens(outputTokens);
 			conversationHistoryRepository.saveAndFlush(conversationHistory);
+			return conversationHistory;
 		} catch (TranslateException e) {
 			log.error("Exception translating store",e);
+			return null;
 		}
 	}
 	

@@ -40,4 +40,10 @@ public class ConversationHistory {
     @JdbcTypeCode(SqlTypes.VECTOR)
     @Array(length = 768)
     private float[] embedding;
+
+    @Column
+    private Integer inputTokens;
+    
+    @Column
+    private Integer outputputTokens;
 }
