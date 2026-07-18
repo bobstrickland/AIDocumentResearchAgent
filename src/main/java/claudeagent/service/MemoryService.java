@@ -1,4 +1,4 @@
-package claudeagent.agent;
+package claudeagent.service;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,9 +55,9 @@ public class MemoryService {
 		if (conversationHistoryList != null && !conversationHistoryList.isEmpty()) {
 			
 			List<MemoryMessage> resultList = conversationHistoryList.stream()
-			.map(memory -> new MemoryMessage(memory.getContent(), MessageType.valueOf(memory.getMessageType()), memory.getId()))
+			.map(memory -> new MemoryMessage(memory.getContent(), MessageType.fromValue(memory.getMessageType()), memory.getId()))
 			.toList();
-			Collections.reverse(resultList); // reverse list so it's returned to the agent in 
+			//Collections.reverse(resultList); // reverse list so it's returned to the agent in 
 			return resultList;
 		} else {
 			return null;
@@ -72,7 +72,7 @@ public class MemoryService {
 			if (conversationHistoryList != null && !conversationHistoryList.isEmpty()) {
 				
 				List<MemoryMessage> resultList = conversationHistoryList.stream()
-				.map(memory -> new MemoryMessage(memory.getContent(), MessageType.valueOf(memory.getMessageType()), memory.getId()))
+				.map(memory -> new MemoryMessage(memory.getContent(), MessageType.fromValue(memory.getMessageType()), memory.getId()))
 				.toList();
 				return resultList;
 			} else {
@@ -97,6 +97,14 @@ public class MemoryService {
 			log.error("Exception translating store",e);
 		}
 	}
+	
+	public void clear(String sessionId) {
+		conversationHistoryRepository.deleteBySessionId(sessionId);
+	}
 
+	public List<ConversationHistory> getAllMessages(String sessionId) {
+		log.info("getting all messages for "+sessionId);
+		return conversationHistoryRepository.findBySessionIdOrderByIdAsc(sessionId);
+	}
 	
 }

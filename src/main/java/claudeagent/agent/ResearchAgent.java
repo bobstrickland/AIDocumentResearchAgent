@@ -11,12 +11,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.stereotype.Service;
 
 import claudeagent.agent.guardrails.AgentIterationLimitExceededException;
 import claudeagent.agent.guardrails.AgentTimeLimitExceededException;
 import claudeagent.model.MemoryMessage;
+import claudeagent.service.MemoryService;
 
 
 @Service
@@ -50,15 +54,18 @@ public class ResearchAgent {
 		if (context != null) {
 			combinedMessageList.addAll(context);
 		}
-		List<MemoryMessage> conversationalMemory = combinedMessageList.stream()
+		
+		List<Message> conversationalMemory = combinedMessageList.stream()
 			      .collect(Collectors.toMap(MemoryMessage::getId, m -> m, (a, b) -> a, LinkedHashMap::new))
 			      .values().stream()
 			      .sorted(Comparator.comparingLong(MemoryMessage::getId)) // sort messages in chronological order (via id smallest to largest)
+			      .map( memoryMessage -> MessageType.ASSISTANT.equals(memoryMessage.getMessageType()) ?
+			    		                 new AssistantMessage(memoryMessage.getText()):
+		                                 new UserMessage(memoryMessage.getText()) )
 			      .collect(Collectors.toList());
-		
 		String chatClientResponse;
 		try {
-			chatClientResponse =  chatClient.prompt().messages(new ArrayList<Message>(conversationalMemory)).user(goal).call().content();
+			chatClientResponse =  chatClient.prompt().messages(conversationalMemory).user(goal).call().content();
 		} catch (ToolExecutionException tee) {
 	          Throwable cause = tee.getCause();
 	          if (cause instanceof AgentIterationLimitExceededException || cause instanceof AgentTimeLimitExceededException) {

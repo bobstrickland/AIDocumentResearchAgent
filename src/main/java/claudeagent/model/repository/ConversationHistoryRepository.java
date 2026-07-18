@@ -6,9 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import claudeagent.model.ConversationHistory;
-import claudeagent.model.DocumentChunk;
 
 public interface ConversationHistoryRepository extends JpaRepository<ConversationHistory, Long>, JpaSpecificationExecutor<ConversationHistory>  {
 
@@ -18,5 +18,9 @@ public interface ConversationHistoryRepository extends JpaRepository<Conversatio
     
     @Query(value="SELECT * FROM conversation_history WHERE session_id=:sessionId ORDER BY id desc LIMIT :topK", nativeQuery = true)
     public List<ConversationHistory> findMostRecent(@Param("sessionId") String sessionId, @Param("topK") int topK);
+
+    public List<ConversationHistory> findBySessionIdOrderByIdAsc(String sessionId);
     
+    @Transactional
+    void deleteBySessionId(String sessionId);
 }

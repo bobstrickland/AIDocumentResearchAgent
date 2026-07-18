@@ -1,8 +1,5 @@
 package claudeagent.model;
 
-import java.time.Instant;
-import java.util.List;
-
 import org.hibernate.annotations.Array;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
